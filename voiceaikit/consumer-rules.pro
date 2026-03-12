@@ -1,0 +1,2 @@
+-keep class com.ubudy.voiceaikit.services.TokenResponse { *; }
+-keep class com.ubudy.voiceaikit.models.UserInfo { *; }
