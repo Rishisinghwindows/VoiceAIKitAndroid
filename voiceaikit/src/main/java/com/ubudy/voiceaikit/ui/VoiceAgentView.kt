@@ -46,12 +46,15 @@ private val FieldBorder = Color.White.copy(alpha = 0.1f)
  * ```kotlin
  * VoiceAgentView()
  * VoiceAgentView(config = VoiceAgentConfig.Default, initialAgentType = "legalAdviser")
+ * // Skip form and auto-connect:
+ * VoiceAgentView(userInfo = UserInfo(name = "John", subject = "Contract review", type = "legalAdviser"))
  * ```
  */
 @Composable
 fun VoiceAgentView(
     config: VoiceAgentConfig = VoiceAgentConfig.Default,
-    initialAgentType: String = ""
+    initialAgentType: String = "",
+    userInfo: UserInfo? = null
 ) {
     val app = LocalContext.current.applicationContext as Application
     val viewModel: VoiceAgentViewModel = viewModel(
@@ -62,14 +65,16 @@ fun VoiceAgentView(
     val audioLevel by viewModel.audioLevel.collectAsState()
     val elapsed by viewModel.elapsedSeconds.collectAsState()
 
+    val skipForm = userInfo != null
     var hasPermission by remember { mutableStateOf(false) }
-    var showForm by remember { mutableStateOf(true) }
+    var showForm by remember { mutableStateOf(!skipForm) }
 
-    var nameField by remember { mutableStateOf("") }
-    var subjectField by remember { mutableStateOf("") }
-    var languageField by remember { mutableStateOf("English") }
+    var nameField by remember { mutableStateOf(userInfo?.name ?: "") }
+    var subjectField by remember { mutableStateOf(userInfo?.subject ?: "") }
+    var languageField by remember { mutableStateOf(userInfo?.language?.ifEmpty { "English" } ?: "English") }
 
-    val resolvedType = initialAgentType.ifEmpty { config.resolvedDefaultType }
+    val resolvedType = if (userInfo?.type?.isNotEmpty() == true) userInfo.type
+        else initialAgentType.ifEmpty { config.resolvedDefaultType }
     var typeField by remember { mutableStateOf(resolvedType) }
 
     val activeConfig = config.agentTypes.firstOrNull { it.id == typeField } ?: config.agentTypes.first()
@@ -81,6 +86,17 @@ fun VoiceAgentView(
     ) { granted ->
         hasPermission = granted
         if (granted) viewModel.toggle()
+    }
+
+    // Auto-connect when form is skipped
+    LaunchedEffect(skipForm) {
+        if (skipForm && userInfo != null) {
+            viewModel.userInfo = userInfo.copy(
+                language = userInfo.language.ifEmpty { "English" },
+                type = userInfo.type.ifEmpty { resolvedType }
+            )
+            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
     }
 
     Box(

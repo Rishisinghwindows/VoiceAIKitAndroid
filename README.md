@@ -77,6 +77,23 @@ VoiceAgentView(
 )
 ```
 
+### Skip Form (Direct Session)
+
+If you want to bypass the built-in form and go straight to the voice session:
+
+```kotlin
+VoiceAgentView(
+    userInfo = UserInfo(
+        name = "John",
+        subject = "Contract review",
+        language = "English",
+        type = "legalAdviser"
+    )
+)
+```
+
+When `userInfo` is provided, the form screen is skipped and the session auto-connects on appear.
+
 ### Custom Theme
 
 ```kotlin
