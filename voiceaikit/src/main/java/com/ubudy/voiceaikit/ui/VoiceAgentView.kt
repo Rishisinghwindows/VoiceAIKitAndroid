@@ -54,7 +54,9 @@ private val FieldBorder = Color.White.copy(alpha = 0.1f)
 fun VoiceAgentView(
     config: VoiceAgentConfig = VoiceAgentConfig.Default,
     initialAgentType: String = "",
-    userInfo: UserInfo? = null
+    userInfo: UserInfo? = null,
+    showFormOnReturn: Boolean = true,
+    onClose: (() -> Unit)? = null
 ) {
     val app = LocalContext.current.applicationContext as Application
     val viewModel: VoiceAgentViewModel = viewModel(
@@ -67,7 +69,7 @@ fun VoiceAgentView(
 
     val skipForm = userInfo != null
     var hasPermission by remember { mutableStateOf(false) }
-    var showForm by remember { mutableStateOf(!skipForm) }
+    var showForm by remember { mutableStateOf(showFormOnReturn && !skipForm) }
 
     var nameField by remember { mutableStateOf(userInfo?.name ?: "") }
     var subjectField by remember { mutableStateOf(userInfo?.subject ?: "") }
@@ -138,11 +140,33 @@ fun VoiceAgentView(
                             else viewModel.toggle()
                         } else {
                             viewModel.toggle()
-                            if (state == ConnectionState.LISTENING || state == ConnectionState.SPEAKING) {
+                            if (showFormOnReturn && (state == ConnectionState.LISTENING || state == ConnectionState.SPEAKING)) {
                                 showForm = true
                             }
                         }
                     }
+                )
+            }
+        }
+
+        // Close button
+        if (onClose != null) {
+            Box(
+                modifier = Modifier
+                    .padding(start = 16.dp, top = 12.dp)
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.White.copy(alpha = 0.1f))
+                    .clickable {
+                        viewModel.disconnect()
+                        onClose()
+                    }
+                    .align(Alignment.TopStart),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "\u2715",
+                    style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = theme.subtleTextColor)
                 )
             }
         }
